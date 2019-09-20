@@ -34,6 +34,9 @@ class Granatum(object):
             Senha
         '''
         self.session = requests.Session()
+        self.session.headers = {
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
+        }
         response_1 = self.session.get('https://contas.granatum.com.br/')
         self.session.post(
             'https://contas.granatum.com.br/users/sign_in',
@@ -46,8 +49,7 @@ class Granatum(object):
             },
         )
         self.session.get('https://contas.granatum.com.br/')
-        r = self.session.get('https://secure.granatum.com.br/oauth/granatum')
-        print(r.text)
+        self.session.get('https://secure.granatum.com.br/oauth/granatum')
         response_2 = self.session.get(
             'https://contas.granatum.com.br/oauth/authorize?client_id=b9e18dcd8bfab8e34fe98f36d8fc8d68637b983bcb63f1bb1f06c1dbd829c276&redirect_uri=https%3A%2F%2Fsecure.granatum.com.br%2Foauth%2Fgranatum%2Fint_callback&scope=public&response_type=code'
         )
@@ -56,7 +58,7 @@ class Granatum(object):
             data={'opauth': utils.parse_opauth(response_2.text)},
         )
 
-    def exportar(self, end_date, start_date, filters={}):
+    def exportar(self, end_date, start_date, filters={}, return_type='list'):
         '''Download the file downloaded after clicking "Exportar" in the "LANCAMENTOS"
         tab.
 
@@ -67,11 +69,14 @@ class Granatum(object):
         start_date : date
             "Ate"
         filters : optional, dict of lists
-            Supported keys are "tipo" and "categorias"
+            "conta_id", "tipo", "categoria_id"; default blank dict
+        return_type : optional, str
+            "list", "pandas.DataFrame", "str"; default "list"
 
         Return
         ------
-        file object
+        return_type
+            Representation of the exported CSV data in a specified format
         '''
         if not bool(self.filters):
             self._attr_filters()
@@ -81,7 +86,8 @@ class Granatum(object):
         response = self.session.get(
             'https://secure.granatum.com.br/a/59361/admin/lancamentos/exportar_lancamentos'
         )
-        return response.content
+        print(response.text)
+        return utils.convert_csv(response.text, return_type)
 
     def _attr_filters(self):
         response = self.session.get(

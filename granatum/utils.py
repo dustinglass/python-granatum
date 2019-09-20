@@ -1,4 +1,7 @@
+from io import StringIO
+
 from lxml.html import fromstring
+import pandas as pd
 
 
 def parse_authenticity_token(text):
@@ -81,3 +84,27 @@ def build_form(end_date, start_date, filters):
         for value in values:
             data.append(('data[Lancamento][{}][]'.format(key), value))
     return data
+
+
+def convert_csv(csv, return_type):
+    '''Format a downloaded CSV file str as the desired return_type.
+
+    Parameters
+    ----------
+    csv : str
+        Raw file str downloaded
+    return_type : str
+        "list", "pandas.DataFrame", "str"
+    '''
+    if return_type in ('list', 'pandas.DataFrame'):
+        df = pd.read_csv(StringIO(csv), sep=';', decimal=',')
+        if return_type == 'list':
+            df.fillna('', inplace=True)
+            return df.to_dict(orient='records')
+        else:
+            return df
+    elif return_type == 'str':
+        return csv
+    else:
+        print('Invalid return_type "{}"; returning str'.format(return_type))
+        return csv

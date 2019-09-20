@@ -167,5 +167,24 @@ class TestBuildForm(unittest.TestCase):
         self.assertEqual(self.expected, result)
 
 
+class TestFormatCsv(unittest.TestCase):
+    '''Tests the format_csv function with different return_types.'''
+
+    with open(
+        os.path.join(FIXTURES_PATH, 'export.txt'), 'r', encoding='utf-8'
+    ) as file:
+        csv = file.read()
+
+    def test_list(self):
+        expected = [
+            {'Data': '03/09/2019', 'Valor': 1.0},
+            {'Data': '14/09/2019', 'Valor': 0.01},
+        ]
+
+        result = utils.convert_csv(self.csv, 'list')
+
+        self.assertEqual(expected, result)
+
+
 if __name__ == '__main__':
     unittest.main()
