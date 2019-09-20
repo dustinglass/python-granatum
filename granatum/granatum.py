@@ -2,29 +2,20 @@ from time import time
 
 from dateutil.relativedelta import relativedelta
 from lxml.html import fromstring
-import requests
+from requests import Session
 
 from granatum import utils
 
 
 class Granatum(object):
-    '''Used for accessing Granatum.'''
+    '''Use for accessing Granatum.'''
 
-    def __init__(self, email, password):
-        '''Creates a logged in Granatum session.
+    def __init__(self):
+        self.filter_options = {}
+        self.session = Session()
 
-        Parameters
-        ----------
-        email : str
-            E-mail
-        password : str
-            Senha
-        '''
-        self.filters = {}
-        self._login(email, password)
-
-    def _login(self, email, password):
-        '''Executes login workflow.
+    def login(self, email, password):
+        '''Execute login workflow.
 
         Parameters
         ----------
@@ -33,10 +24,6 @@ class Granatum(object):
         password : str
             Senha
         '''
-        self.session = requests.Session()
-        self.session.headers = {
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
-        }
         response_1 = self.session.get('https://contas.granatum.com.br/')
         self.session.post(
             'https://contas.granatum.com.br/users/sign_in',
@@ -78,24 +65,69 @@ class Granatum(object):
         return_type
             Representation of the exported CSV data in a specified format
         '''
-        if not bool(self.filters):
-            self._attr_filters()
-        self._post_filter(utils.build_form(end_date, start_date, filters))
+        if not bool(self.filter_options):
+            self._attr_filter_options()
+        self._post_filter(self._build_form(end_date, start_date, filters))
         self._get_carrega_balanco()
         self._post_ajax()
         response = self.session.get(
             'https://secure.granatum.com.br/a/59361/admin/lancamentos/exportar_lancamentos'
         )
-        print(response.text)
         return utils.convert_csv(response.text, return_type)
 
-    def _attr_filters(self):
+    def _attr_filter_options(self):
         response = self.session.get(
             'https://secure.granatum.com.br/a/59361/admin/lancamentos'
         )
-        self.filters['conta_id'] = utils.parse_conta_ids(response.text)
-        self.filters['tipo'] = utils.parse_tipos(response.text)
-        self.filters['categoria_id'] = utils.parse_categoria_ids(response.text)
+        self.filter_options['conta_id'] = utils.parse_conta_ids(response.text)
+        self.filter_options['tipo'] = utils.parse_tipos(response.text)
+        self.filter_options['categoria_id'] = utils.parse_categoria_ids(response.text)
+
+    def _build_form(self, end_date, start_date, filters):
+        '''Construct the form data used to filter site results.
+
+        Parameters
+        ----------
+        end_date : date
+            "De"
+        start_date : date
+            "Ate"
+        filters : optional, dict of lists
+            Supported keys are "conta_id", "tipo", "categoria_id"
+
+        Return
+        ------
+        list of tuples
+        '''
+        data = [
+            ('_method', 'POST'),
+            ('data[Lancamento][regime]', '1'),
+            ('data[Lancamento][atalhoCalendario]', 'diario'),
+            ('data[Lancamento][startDate]', start_date.strftime('%d/%m/%Y')),
+            ('data[Lancamento][endDate]', end_date.strftime('%d/%m/%Y')),
+            ('data[Lancamento][conta_id]', ''),
+            ('data[Lancamento][centro_custo_lucro_id]', ''),
+            ('data[Lancamento][busca]', ''),
+            ('data[Lancamento][tipo]', ''),
+            ('data[Lancamento][categoria_id]', ''),
+            ('data[Lancamento][forma_pagamento_id]', ''),
+            ('data[Lancamento][tipo_custo_nivel_producao_id]', ''),
+            ('data[Lancamento][tipo_custo_apropriacao_produto_id]', ''),
+            ('data[Lancamento][tipo_documento_id]', ''),
+            ('data[Lancamento][cliente_id]', ''),
+            ('data[Lancamento][fornecedor_id]', ''),
+            ('data[Lancamento][tag_id]', ''),
+            ('data[Lancamento][wgi_usuario_id]', ''),
+        ]
+        for key, values in filters.items():
+            for value in values:
+                data.append(
+                    (
+                        'data[Lancamento][{}][]'.format(key),
+                        self.filter_options[key][value],
+                    )
+                )
+        return data
 
     def _post_filter(self, data):
         '''Filter the result set on the website.
