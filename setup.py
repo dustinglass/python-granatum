@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="granatum-dustintheglass",
+    name="python-granatum",
     version="0.0.1",
     author="dustintheglass",
     author_email="dustin.glass@gmail.com",
