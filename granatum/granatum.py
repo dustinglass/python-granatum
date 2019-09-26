@@ -11,7 +11,6 @@ class Granatum(object):
     '''Use for accessing Granatum.'''
 
     def __init__(self):
-        self.filter_options = {}
         self.session = Session()
 
     def login(self, email, password):
@@ -25,7 +24,7 @@ class Granatum(object):
             Senha
         '''
         response_1 = self.session.get('https://contas.granatum.com.br/')
-        self.session.post(
+        response_2 = self.session.post(
             'https://contas.granatum.com.br/users/sign_in',
             data={
                 'authenticity_token': utils.parse_authenticity_token(response_1.text),
@@ -35,15 +34,28 @@ class Granatum(object):
                 'utf8': '✓',
             },
         )
+        print(response_2.text)
+        utils.parse_flash_alert(response_2.text)
         self.session.get('https://contas.granatum.com.br/')
         self.session.get('https://secure.granatum.com.br/oauth/granatum')
-        response_2 = self.session.get(
+        response_3 = self.session.get(
             'https://contas.granatum.com.br/oauth/authorize?client_id=b9e18dcd8bfab8e34fe98f36d8fc8d68637b983bcb63f1bb1f06c1dbd829c276&redirect_uri=https%3A%2F%2Fsecure.granatum.com.br%2Foauth%2Fgranatum%2Fint_callback&scope=public&response_type=code'
         )
         self.session.post(
             'https://secure.granatum.com.br/oauth/callback',
-            data={'opauth': utils.parse_opauth(response_2.text)},
+            data={'opauth': utils.parse_opauth(response_3.text)},
         )
+
+    def attr_filter_options(self):
+        '''Attribute the available options for data filters.'''
+        response = self.session.get(
+            'https://secure.granatum.com.br/a/59361/admin/lancamentos'
+        )
+        self.filter_options = {
+            'conta_id': utils.parse_conta_ids(response.text),
+            'tipo': utils.parse_tipos(response.text),
+            'categoria_id': utils.parse_categoria_ids(response.text),
+        }
 
     def exportar(self, end_date, start_date, filters={}, return_type='list'):
         '''Download the file downloaded after clicking "Exportar" in the "LANCAMENTOS"
@@ -65,23 +77,15 @@ class Granatum(object):
         return_type
             Representation of the exported CSV data in a specified format
         '''
-        if not bool(self.filter_options):
-            self._attr_filter_options()
         self._post_filter(self._build_form(end_date, start_date, filters))
         self._get_carrega_balanco()
         self._post_ajax()
         response = self.session.get(
             'https://secure.granatum.com.br/a/59361/admin/lancamentos/exportar_lancamentos'
         )
-        return utils.convert_csv(response.text, return_type)
-
-    def _attr_filter_options(self):
-        response = self.session.get(
-            'https://secure.granatum.com.br/a/59361/admin/lancamentos'
+        return utils.convert_csv(
+            response.content.decode('latin-1'), return_type
         )
-        self.filter_options['conta_id'] = utils.parse_conta_ids(response.text)
-        self.filter_options['tipo'] = utils.parse_tipos(response.text)
-        self.filter_options['categoria_id'] = utils.parse_categoria_ids(response.text)
 
     def _build_form(self, end_date, start_date, filters):
         '''Construct the form data used to filter site results.

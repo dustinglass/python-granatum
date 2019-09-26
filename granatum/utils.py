@@ -8,6 +8,13 @@ def parse_authenticity_token(text):
     return fromstring(text).xpath('//input[@name="authenticity_token"]/@value')[0]
 
 
+def parse_flash_alert(text):
+    try:
+        raise ValueError(fromstring(text).xpath('//div[@id="flash_alert"]/text()')[0])
+    except IndexError:
+        pass
+
+
 def parse_opauth(text):
     return fromstring(text).xpath('//input[@name="opauth"]/@value')[0]
 

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="python-granatum",
-    version="0.0.1",
+    version="0.0.5",
     author="dustintheglass",
     author_email="dustin.glass@gmail.com",
     description="A Python wrapper for Granatum Financeiro",
