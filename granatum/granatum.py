@@ -12,6 +12,7 @@ class Granatum(object):
 
     def __init__(self):
         self.session = Session()
+        self.filter_options = {}
 
     def login(self, email, password):
         '''Execute login workflow.
@@ -34,7 +35,6 @@ class Granatum(object):
                 'utf8': '✓',
             },
         )
-        print(response_2.text)
         utils.parse_flash_alert(response_2.text)
         self.session.get('https://contas.granatum.com.br/')
         self.session.get('https://secure.granatum.com.br/oauth/granatum')
@@ -77,6 +77,8 @@ class Granatum(object):
         return_type
             Representation of the exported CSV data in a specified format
         '''
+        if not bool(self.filter_options):
+            self.attr_filter_options()
         self._post_filter(self._build_form(end_date, start_date, filters))
         self._get_carrega_balanco()
         self._post_ajax()
