@@ -6,7 +6,7 @@
 
 ## Quick Start
 
-Fill in the <values> in this script to get a [pandas.DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html) representation of transactions for a given account.
+Fill in the `<values>` in this script to get a [pandas.DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html) representation of transactions for a given account.
 
 ```
 from datetime import date
