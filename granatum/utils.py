@@ -1,4 +1,5 @@
 from io import StringIO
+import json
 
 from lxml.html import fromstring
 import pandas as pd
@@ -22,12 +23,20 @@ def parse_opauth(text):
 def parse_conta_ids(text):
     result = {}
     root = fromstring(text)
-    for input, label in zip(
-        root.xpath('//input[@name="data[Lancamento][conta_id][]"]'),
-        root.xpath('//label[@name="data[Lancamento][conta_id][]"]'),
-    ):
-        if input.xpath('./@name')[0] != 'selectAll':
-            result[label.xpath('./text()')[0]] = input.xpath('./@value')[0]
+    for script in root.xpath('//script[contains(text(),"contasFiltro = ")]/text()'):
+        # TODO: Use API instead of scraper bot.
+        # Below is a terrible workaround I've done.
+        contas_filtro = json.loads(
+            script
+            .strip()
+            .lstrip('//<![CDATA[')
+            .rstrip('//]]>')
+            .strip()
+            .split('; ')[0]
+            .split(' = ', 1)[1]
+        )
+        for i in contas_filtro:
+            result[i['descricao']] = i['id']
     return result
 
 
